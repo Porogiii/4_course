@@ -169,7 +169,13 @@ def calculate_rsa_block_size(n: int) -> int:
 
 
 def rsa_encrypt_file(public_key: Tuple[int, int], input_file: str, output_file: str):
-    """Шифрование файла с помощью RSA"""
+    """Шифрование файла с помощью RSA
+        выбираем 2 простых числа p и q
+        вычисляем n = pq
+        вычисляем ф = (p-1)(q-1)
+        выбираем d , чтобы нод (d, ф) = 1 и d < ф
+        c такое, что cd mod ф = 1
+        шифруем e = m^d mod n"""
     n, c = public_key
     block_size = calculate_rsa_block_size(n)
 
@@ -216,7 +222,8 @@ def rsa_encrypt_file(public_key: Tuple[int, int], input_file: str, output_file: 
 
 
 def rsa_decrypt_file(private_key: Tuple[int, int, int, int], input_file: str, output_file: str):
-    """Дешифрование файла с помощью RSA"""
+    """Дешифрование файла с помощью RSA
+        m = e^d mod n"""
     n, d, p, q = private_key
 
     # Чтение зашифрованного файла
