@@ -13,7 +13,7 @@ class DFA:
         self.final_states = final_states
         self._is_deterministic = None
 
-    def is_deterministic(self) -> bool:
+    def is_deterministic(self):
         if self._is_deterministic is not None:
             return self._is_deterministic
 
@@ -39,7 +39,7 @@ class DFA:
         self._is_deterministic = True
         return True
 
-    def _epsilon_closure(self, states: Set[str]) -> Set[str]:
+    def _epsilon_closure(self, states: Set[str]):
         closure = set(states)
         stack = list(states)
 
@@ -56,7 +56,7 @@ class DFA:
 
         return closure
 
-    def determinize(self) -> 'DFA':
+    def determinize(self):
 
         start_closure = self._epsilon_closure({self.start_state})
         dfa_start_state = self._state_set_to_name(start_closure)
@@ -110,13 +110,13 @@ class DFA:
         #print(f"Создано состояний ДКА: {len(dfa_states)}")
         return DFA(dfa_states, self.alphabet, dfa_transitions, dfa_start_state, dfa_final_states)
 
-    def _state_set_to_name(self, state_set: Set[str]) -> str:
+    def _state_set_to_name(self, state_set: Set[str]):
         if not state_set:
             return "∅"
         sorted_states = sorted(state_set)
         return "{" + ",".join(sorted_states) + "}"
 
-    def remove_unreachable_states(self) -> 'DFA':
+    def remove_unreachable_states(self):
         reachable = set()
         stack = [self.start_state]
 
@@ -150,7 +150,7 @@ class DFA:
 
         return DFA(new_states, self.alphabet, new_transitions, self.start_state, new_final_states)
 
-    def build_equivalence_classes(self) -> List[Set[str]]:
+    def build_equivalence_classes(self):
         F = self.final_states
         Q_F = self.states - F
 
@@ -181,7 +181,7 @@ class DFA:
 
         return R_current
 
-    def _split_equivalence_class(self, eq_class: Set[str], partition: List[Set[str]]) -> List[Set[str]]:
+    def _split_equivalence_class(self, eq_class: Set[str], partition: List[Set[str]]):
         behavior_map = {}
 
         for state in eq_class:
@@ -214,7 +214,7 @@ class DFA:
 
         return list(behavior_map.values())
 
-    def _are_partitions_equal(self, part1: List[Set[str]], part2: List[Set[str]]) -> bool:
+    def _are_partitions_equal(self, part1: List[Set[str]], part2: List[Set[str]]):
         if len(part1) != len(part2):
             return False
 
@@ -223,7 +223,7 @@ class DFA:
 
         return set1 == set2
 
-    def minimize(self) -> 'DFA':
+    def minimize(self):
         if not self.is_deterministic():
             raise ValueError("Автомат должен быть детерминированным для минимизации")
 
@@ -268,7 +268,7 @@ class DFA:
 
         return DFA(new_states, self.alphabet, new_transitions, new_start_state, new_final_states)
 
-    def __str__(self) -> str:
+    def __str__(self):
         result = "Конечный автомат:\n"
         result += f"Состояния: {sorted(self.states)}\n"
         result += f"Алфавит: {sorted(self.alphabet)}\n"
@@ -285,47 +285,50 @@ class DFA:
 
 def process_automaton():
 
-    states = {'q0', 'q1', 'q2', 'q3', 'q4', 'q5'}
-    alphabet = {'0', '1'}
-
-    transitions = {
-        ('q0', '0'): 'q1',
-        ('q0', '1'): 'q2',
-        ('q1', '0'): 'q4',
-        ('q1', '1'): 'q2',
-        ('q2', '0'): 'q3',
-        ('q2', '1'): 'q0',
-        ('q3', '0'): 'q5',
-        ('q3', '1'): 'q2',
-        ('q4', '0'): 'q5',
-        ('q4', '1'): 'q5',
-        ('q5', '0'): 'q4',
-        ('q5', '1'): 'q4'
-    }
-
-    start_state = 'q0'
-    final_states = {'q4', 'q5'}
-
-
-
-
-
-
-
-
-    # states = {'q0', 'q1', 'q2'}
+    # states = {'q0', 'q1', 'q2', 'q3', 'q4'}
     # alphabet = {'0', '1'}
     #
-    # # ПЕРЕХОДЫ - можно использовать как одно состояние, так и множество
     # transitions = {
-    #     ('q0', '1'): {'q0', 'q1'},  # НКА переход
     #     ('q0', '0'): 'q0',
-    #     ('q1', '1'): 'q2'
-    #
+    #     ('q0', '1'): 'q2',
+    #     ('q1', '0'): 'q4',
+    #     ('q1', '1'): 'q2',
+    #     ('q2', '0'): 'q3',
+    #     ('q2', '1'): 'q0',
+    #     ('q3', '0'): 'q5',
+    #     ('q3', '1'): 'q2',
+    #     ('q4', '0'): 'q5',
+    #     ('q4', '1'): 'q5',
+    #     ('q5', '0'): 'q4',
+    #     ('q5', '1'): 'q4'
     # }
     #
     # start_state = 'q0'
-    # final_states = {'q2'}
+    # final_states = {'q4'}
+
+
+
+
+
+
+
+
+    states = {'q0', 'q1', 'q2', 'q3', 'q4'}
+    alphabet = {'0', '1'}
+
+    transitions = {
+        ('q0', '0'): {'q0', 'q1'},
+        ('q0', '1'): 'q0',
+        ('q1', '0'): 'q2',
+        ('q1', '1'): 'q2',
+        ('q2', '0'): 'q3',
+        ('q2', '1'): 'q3',
+        ('q3', '0'): 'q4',
+        ('q3', '1'): 'q4',
+    }
+
+    start_state = 'q0'
+    final_states = {'q4'}
 
 
 
