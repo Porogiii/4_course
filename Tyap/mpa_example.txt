@@ -1,0 +1,23 @@
+# МПА из задания 19
+# P = ({q0, q1, q2}, {a, b}, {Z, a, b}, δ, q0, Z, {q2})
+
+STATES: q0 q1 q2
+INPUT_ALPHABET: a b
+STACK_ALPHABET: Z a b
+START: q0
+START_STACK: Z
+FINAL: q2
+
+# Переходы в формате: состояние входной_символ стековый_символ новое_состояние новый_стек
+TRANSITIONS:
+q0 a Z q0 aZ
+q0 b Z q0 bZ
+q0 a a q0 aa
+q0 a a q1 ε
+q0 a b q0 ab
+q0 b a q0 ba
+q0 b b q0 bb
+q0 b b q1 ε
+q1 a a q1 ε
+q1 b b q1 ε
+q1 ε Z q2 ε
