@@ -1,231 +1,204 @@
-import random
+import secrets
 import hashlib
-import json
-from typing import Tuple, Dict, Any
+import sys
+import math
+from typing import Tuple
 
+PRIME_BITS = 256
+RND_BITS = 512
 
-class BlindSignatureSystem:
-    """Система слепой подписи для анонимного голосования"""
-
-    def __init__(self, p: int = None, g: int = None, q: int = None):
-        """Инициализация системы с параметрами безопасности"""
-        if p is None:
-            # Используем стандартные параметры для простоты
-            self.p = 23  # простое число
-            self.g = 5  # генератор
-            self.q = 11  # порядок подгруппы
+def is_probable_prime(n: int, rounds: int = 16) -> bool:
+    if n < 2:
+        return False
+    small_primes = [2,3,5,7,11,13,17,19,23,29]
+    for p in small_primes:
+        if n % p == 0:
+            return n == p
+    d = n - 1
+    s = 0
+    while d % 2 == 0:
+        d //= 2
+        s += 1
+    for _ in range(rounds):
+        a = secrets.randbelow(n - 3) + 2
+        x = pow(a, d, n)
+        if x == 1 or x == n-1:
+            continue
+        for _ in range(s - 1):
+            x = (x*x) % n
+            if x == n-1:
+                break
         else:
-            self.p = p
-            self.g = g
-            self.q = q
+            return False
+    return True
 
-        # Закрытый ключ сервера
-        self.server_private_key = random.randint(1, self.q - 1)
-        # Открытый ключ сервера
-        self.server_public_key = pow(self.g, self.server_private_key, self.p)
+def generate_prime(bits: int) -> int:
+    while True:
+        p = secrets.randbits(bits) | (1 << (bits - 1)) | 1
+        if is_probable_prime(p):
+            return p
 
-        print(f"Инициализирована система слепой подписи:")
-        print(f"p = {self.p}, g = {self.g}, q = {self.q}")
-        print(f"Открытый ключ сервера: {self.server_public_key}")
-        print(f"Закрытый ключ сервера: {self.server_private_key}\n")
+def egcd_iter(a: int, b: int) -> Tuple[int,int,int]:
+    x0, x1 = 1, 0
+    y0, y1 = 0, 1
+    while b != 0:
+        q, a, b = a // b, b, a % b
+        x0, x1 = x1, x0 - q * x1
+        y0, y1 = y1, y0 - q * y1
+    return a, x0, y0
 
-
-class Client:
-    """Клиентская часть системы голосования"""
-
-    def __init__(self, system: BlindSignatureSystem):
-        self.system = system
-        self.vote_options = {1: "Да", 2: "Нет", 3: "Воздержался"}
-
-    def create_blinded_vote(self, vote_choice: int) -> Tuple[int, int, int]:
-        """Создание ослепленного бюллетеня"""
-        if vote_choice not in self.vote_options:
-            raise ValueError("Неверный выбор голоса")
-
-        # Преобразуем голос в число
-        vote_number = vote_choice
-
-        # Генерируем случайное число для ослепления
-        k = random.randint(1, self.system.q - 1)
-
-        # Вычисляем ослепленный бюллетень
-        blinded_vote = (vote_number * pow(self.system.g, k, self.system.p)) % self.system.p
-
-        print(f"Клиент: Создание ослепленного бюллетеня")
-        print(f"Выбор: {self.vote_options[vote_choice]} ({vote_number})")
-        print(f"Случайное число k = {k}")
-        print(f"Ослепленный бюллетень: {blinded_vote}")
-
-        return blinded_vote, k, vote_number
-
-    def unblind_signature(self, blinded_signature: int, k: int) -> int:
-        """Снятие ослепления с подписи"""
-        # Вычисляем обратный элемент для k
-        k_inv = pow(k, -1, self.system.q)
-
-        # Снимаем ослепление
-        signature = (blinded_signature * pow(self.system.server_public_key, -k_inv, self.system.p)) % self.system.p
-
-        print(f"Клиент: Снятие ослепления")
-        print(f"Ослепленная подпись: {blinded_signature}")
-        print(f"Обратный элемент k: {k_inv}")
-        print(f"Итоговая подпись: {signature}")
-
-        return signature
-
-    def create_final_ballot(self, vote_number: int, signature: int) -> Dict[str, Any]:
-        """Создание финального бюллетеня"""
-        ballot = {
-            'vote': vote_number,
-            'signature': signature,
-            'public_key': self.system.server_public_key
-        }
-
-        print(f"Клиент: Финальный бюллетень создан")
-        print(f"Голос: {self.vote_options[vote_number]} ({vote_number})")
-        print(f"Подпись: {signature}")
-
-        return ballot
+def modinv(a: int, m: int) -> int:
+    g, x, _ = egcd_iter(a, m)
+    if g != 1:
+        raise ValueError("Inverse does not exist")
+    return x % m
 
 
 class Server:
-    """Серверная часть системы голосования"""
+    def __init__(self, prime_bits=PRIME_BITS):
+        print("[server] Генерация RSA-ключей...")
+        self.P = generate_prime(prime_bits)
+        self.Q = generate_prime(prime_bits)
+        while self.Q == self.P:
+            self.Q = generate_prime(prime_bits)
+        self.N = self.P * self.Q
+        self.phi = (self.P - 1) * (self.Q - 1)
 
-    def __init__(self, system: BlindSignatureSystem):
-        self.system = system
-        self.received_ballots = []
-        self.vote_options = {1: "Да", 2: "Нет", 3: "Воздержался"}
+        e = 65537
+        if math.gcd(e, self.phi) != 1:
+            e = 3
+            while math.gcd(e, self.phi) != 1:
+                e += 2
 
-    def sign_blinded_vote(self, blinded_vote: int) -> int:
-        """Подписание ослепленного бюллетеня"""
-        # Сервер подписывает ослепленный бюллетень своим закрытым ключом
-        blinded_signature = pow(blinded_vote, self.system.server_private_key, self.system.p)
+        self.e = e
+        self.d = modinv(self.e, self.phi)
 
-        print(f"Сервер: Подписание ослепленного бюллетеня")
-        print(f"Ослепленный бюллетень: {blinded_vote}")
-        print(f"Закрытый ключ: {self.system.server_private_key}")
-        print(f"Ослепленная подпись: {blinded_signature}")
+        self.issued = set()
+        self.votes_db = []
 
-        return blinded_signature
+        print("[server] Готово.")
 
-    def verify_ballot(self, ballot: Dict[str, Any]) -> bool:
-        """Проверка корректности бюллетеня"""
-        vote = ballot['vote']
-        signature = ballot['signature']
-        public_key = ballot['public_key']
+    def issue_signed_blind(self, client_id: str, h_bar: int) -> int:
+        if client_id in self.issued:
+            raise PermissionError("Этому человеку уже выдавали бюллетень!")
+        self.issued.add(client_id)
+        return pow(h_bar, self.d, self.N)
 
-        print(f"Сервер: Проверка бюллетеня")
-        print(f"Голос: {self.vote_options[vote]} ({vote})")
-        print(f"Подпись: {signature}")
+    def verify_and_accept(self, n: int, s: int) -> bool:
+        h = sha3_int(n)
+        if pow(s, self.e, self.N) == h:
+            vote_info = decode_n(n)
+            self.votes_db.append((n, s, vote_info))
+            return True
+        return False
 
-        # Проверяем подпись
-        left_side = pow(self.system.g, signature, self.system.p)
-        right_side = (vote * pow(public_key, signature, self.system.p)) % self.system.p
+    def print_public_info(self):
+        print("----- Публичные параметры -----")
+        print(f"N = {self.N}")
+        print(f"e = {self.e}")
+        print("--------------------------------")
 
-        is_valid = left_side == right_side
-
-        print(f"Проверка подписи:")
-        print(f"Левая часть: {left_side}")
-        print(f"Правая часть: {right_side}")
-        print(f"Подпись {'валидна' if is_valid else 'невалидна'}")
-
-        if is_valid:
-            self.received_ballots.append(ballot)
-            print("Бюллетень принят!")
-        else:
-            print("Бюллетень отклонен!")
-
-        return is_valid
-
-    def show_results(self):
-        """Показать результаты голосования"""
-        print("\n" + "=" * 50)
-        print("РЕЗУЛЬТАТЫ ГОЛОСОВАНИЯ")
-        print("=" * 50)
-
-        vote_counts = {1: 0, 2: 0, 3: 0}
-
-        for ballot in self.received_ballots:
-            vote_counts[ballot['vote']] += 1
-
-        for vote_num, count in vote_counts.items():
-            print(f"{self.vote_options[vote_num]}: {count} голосов")
-
-        total_votes = len(self.received_ballots)
-        print(f"\nВсего голосов: {total_votes}")
+    def print_votes(self):
+        print("\n=== Принятые голоса ===")
+        if not self.votes_db:
+            print("Пока нет голосов.")
+            return
+        for i, (_, _, info) in enumerate(self.votes_db, 1):
+            print(f"{i}) Голос: {info['vote']} (код {info['vote_code']})")
 
 
-def main():
-    """Основная функция демонстрации системы"""
-    print("СИСТЕМА АНОНИМНОГО ГОЛОСОВАНИЯ СО СЛЕПОЙ ПОДПИСЬЮ")
-    print("=" * 60)
+def sha3_int(n: int) -> int:
+    b = n.to_bytes((n.bit_length() + 7) // 8 or 1, 'big')
+    h = hashlib.sha3_256(b).digest()
+    return int.from_bytes(h, 'big')
 
-    # Инициализация системы
-    system = BlindSignatureSystem()
-    client = Client(system)
-    server = Server(system)
+def encode_vote(vote_choice: str, extra_info: str = "") -> int:
+    mapping = {"Да": 1, "Нет": 0, "Воздержался": 2}
+    if vote_choice not in mapping:
+        raise ValueError("Неверный вариант.")
+    code = mapping[vote_choice] & 0xFF
+    h = hashlib.sha3_256(extra_info.encode('utf-8')).digest()
+    prefix = int.from_bytes(h[:63], 'big')
+    return (prefix << 8) | code
+
+def decode_n(n: int) -> dict:
+    v_mask = (1 << 512) - 1
+    v = n & v_mask
+    rnd = n >> 512
+    code = v & 0xFF
+    mapping = {1: "Да", 0: "Нет", 2: "Воздержался"}
+    return {"vote_code": code, "vote": mapping.get(code, "??")}
+
+def client_vote_flow(server: Server, client_id: str, vote_choice: str):
+    print(f"\n[client] Голосование за '{vote_choice}'...")
+
+    rnd = secrets.randbits(RND_BITS)
+
+    v_field = encode_vote(vote_choice, extra_info="Election2025")
+    n = (rnd << 512) | v_field
+
+    h = sha3_int(n)
 
     while True:
-        print("\n" + "=" * 50)
-        print("МЕНЮ:")
-        print("1. Проголосовать")
-        print("2. Показать результаты")
-        print("3. Выйти")
+        r = secrets.randbelow(server.N - 2) + 2
+        if math.gcd(r, server.N) == 1:
+            break
+    h_bar = (h * pow(r, server.e, server.N)) % server.N
 
-        choice = input("Выберите действие: ")
+    try:
+        s_bar = server.issue_signed_blind(client_id, h_bar)
+    except PermissionError as e:
+        print("[client]", e)
+        return
+
+    s = (s_bar * modinv(r, server.N)) % server.N
+
+    if server.verify_and_accept(n, s):
+        print("[client] Голос принят!")
+    else:
+        print("[client] Голос отклонён.")
+
+
+def menu(server: Server):
+    while True:
+        print("\n==== МЕНЮ ГОЛОСОВАНИЯ ====")
+        print("1) Проголосовать")
+        print("2) Показать принятые голоса")
+        print("3) Показать публичные параметры сервера")
+        print("4) Выход")
+        choice = input("Ваш выбор: ").strip()
 
         if choice == "1":
-            # Процесс голосования
-            print("\nВЫБОР ГОЛОСА:")
-            print("1 - Да")
-            print("2 - Нет")
-            print("3 - Воздержался")
-
-            try:
-                vote_choice = int(input("Ваш выбор: "))
-
-                if vote_choice not in [1, 2, 3]:
-                    print("Неверный выбор!")
-                    continue
-
-                print("\n" + "-" * 30)
-                print("ЭТАП 1: Клиент создает ослепленный бюллетень")
-                print("-" * 30)
-                blinded_vote, k, vote_number = client.create_blinded_vote(vote_choice)
-
-                print("\n" + "-" * 30)
-                print("ЭТАП 2: Сервер подписывает ослепленный бюллетень")
-                print("-" * 30)
-                blinded_signature = server.sign_blinded_vote(blinded_vote)
-
-                print("\n" + "-" * 30)
-                print("ЭТАП 3: Клиент снимает ослепление")
-                print("-" * 30)
-                signature = client.unblind_signature(blinded_signature, k)
-
-                print("\n" + "-" * 30)
-                print("ЭТАП 4: Клиент формирует финальный бюллетень")
-                print("-" * 30)
-                ballot = client.create_final_ballot(vote_number, signature)
-
-                print("\n" + "-" * 30)
-                print("ЭТАП 5: Сервер проверяет бюллетень")
-                print("-" * 30)
-                server.verify_ballot(ballot)
-
-            except Exception as e:
-                print(f"Ошибка: {e}")
+            cid = input("Введите ваш ID (например user123): ").strip()
+            print("Варианты:")
+            print("  1 — Да")
+            print("  2 — Нет")
+            print("  3 — Воздержался")
+            v = input("Выберите вариант: ").strip()
+            mapping = {"1": "Да", "2": "Нет", "3": "Воздержался"}
+            if v not in mapping:
+                print("Неверный ввод.")
+                continue
+            client_vote_flow(server, cid, mapping[v])
 
         elif choice == "2":
-            server.show_results()
+            server.print_votes()
 
         elif choice == "3":
-            print("Выход из системы...")
+            server.print_public_info()
+
+        elif choice == "4":
+            print("Выход.")
             break
 
         else:
-            print("Неверный выбор!")
+            print("Неизвестный пункт меню.")
 
+
+def main():
+    print("=== Протокол слепой подписи — голосование ===")
+    server = Server(prime_bits=PRIME_BITS)
+    menu(server)
 
 if __name__ == "__main__":
     main()

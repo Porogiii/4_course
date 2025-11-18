@@ -13,37 +13,37 @@ class DMPProcessor:
         self.start_state = start_state
         self.start_stack = start_stack
         self.final_states = final_states
-        
+
     def process_string(self, input_string: str):
         print(f"\n{'='*60}")
         print(f"ПОШАГОВОЕ ВЫПОЛНЕНИЕ ДЛЯ ЦЕПОЧКИ: '{input_string}'")
         print(f"{'='*60}")
-        
+
         initial_config = (self.start_state, 0, [self.start_stack])
         queue = deque([(initial_config, [])])
         visited = set()
         step_counter = 0
-        
+
         print(f"Шаг {step_counter}: Начальная конфигурация")
         print(f"  Состояние: {self.start_state}")
         print(f"  Позиция в строке: 0")
         print(f"  Стек: [{self.start_stack}]")
         print(f"  Оставшаяся строка: '{input_string}'")
-        
+
         while queue:
             (state, pos, stack), path = queue.popleft()
-            
+
             config_key = (state, pos, tuple(stack))
             if config_key in visited:
                 continue
             visited.add(config_key)
-            
+
             if pos == len(input_string):
                 step_counter += 1
                 print(f"\nШаг {step_counter}: Достигнут конец строки")
                 print(f"  Состояние: {state}")
                 print(f"  Стек: {stack if stack else '[пустой]'}")
-                
+
                 epsilon_transitions = self.get_epsilon_transitions(state, stack)
                 for next_state, new_stack in epsilon_transitions:
                     step_counter += 1
@@ -51,7 +51,7 @@ class DMPProcessor:
                     print(f"  δ({state}, ε, {stack[0] if stack else 'пустой'}) -> ({next_state}, {new_stack if new_stack else '[пустой]'})")
                     print(f"  Новое состояние: {next_state}")
                     print(f"  Новый стек: {new_stack if new_stack else '[пустой]'}")
-                    
+
                     if next_state in self.final_states and not new_stack:
                         print(f"\n{'='*60}")
                         print("РЕЗУЛЬТАТ: ЦЕПОЧКА ПРИНЯТА!")
@@ -67,33 +67,33 @@ class DMPProcessor:
                     print(f"{'='*60}")
                     return True, "Цепочка принята", []
                 continue
-            
+
             current_symbol = input_string[pos]
             remaining_string = input_string[pos+1:] if pos+1 < len(input_string) else ""
-            
+
             step_counter += 1
             print(f"\nШаг {step_counter}: Обработка символа '{current_symbol}'")
             print(f"  Текущее состояние: {state}")
             print(f"  Текущий стек: {stack if stack else '[пустой]'}")
             print(f"  Оставшаяся строка: '{remaining_string}'")
-            
+
             possible_transitions = self.get_transitions(state, current_symbol, stack)
-            
+
             if not possible_transitions:
                 print(f"  Нет доступных переходов для символа '{current_symbol}'")
                 continue
-            
+
             for next_state, new_stack in possible_transitions:
                 print(f"  Применяем переход: δ({state}, '{current_symbol}', {stack[0] if stack else 'пустой'}) -> ({next_state}, {new_stack if new_stack else 'ε'})")
                 print(f"  Новое состояние: {next_state}")
                 print(f"  Новый стек: {new_stack if new_stack else '[пустой]'}")
                 queue.append(((next_state, pos + 1, new_stack), path + [f"Переход по '{current_symbol}'"]))
-            
+
             epsilon_transitions = self.get_epsilon_transitions(state, stack)
-            for next_state, new_stack in epsilon_transitions:
-                print(f"  Доступен ε-переход: δ({state}, ε, {stack[0] if stack else 'пустой'}) -> ({next_state}, {new_stack if new_stack else 'ε'})")
-                queue.append(((next_state, pos, new_stack), path + [f"ε-переход в {next_state}"]))
-        
+            # for next_state, new_stack in epsilon_transitions:
+                # print(f"  Доступен ε-переход: δ({state}, ε, {stack[0] if stack else 'пустой'}) -> ({next_state}, {new_stack if new_stack else 'ε'})")
+                # queue.append(((next_state, pos, new_stack), path + [f"ε-переход в {next_state}"]))
+
         print(f"\n{'='*60}")
         print("РЕЗУЛЬТАТ: ЦЕПОЧКА ОТКЛОНЕНА!")
         print("Нет пути к финальному состоянию с пустым стеком")
@@ -264,7 +264,7 @@ def print_menu():
     print("│             ВЫБОР АВТОМАТА              │")
     print("├─────────────────────────────────────────┤")
     print("│ 1. Загрузить ДМП из файла               │")
-    print("│ 2. ДМП из задания 19                    │")
+    #print("│ 2. ДМП из задания 19                    │")
     print("└─────────────────────────────────────────┘")
 
 def main():
@@ -272,7 +272,7 @@ def main():
     print_header()
     print_menu()
     
-    choice = input("\nВаш выбор (1-2): ").strip()
+    choice = input("\nВаш выбор (1): ").strip()
     
     automaton = None
     
