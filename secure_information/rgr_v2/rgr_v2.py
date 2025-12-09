@@ -4,9 +4,9 @@ import random
 import math
 from typing import List, Tuple, Optional
 
-# --------------------------
-# RSA без сторонних библиотек
-# --------------------------
+# ---
+# RSA
+# ---
 
 def is_probable_prime(n: int, k: int = 12) -> bool:
     """тест простоты"""
@@ -113,7 +113,7 @@ def permute_graph(adj:List[List[int]]) -> Tuple[List[List[int]],List[int]]:
     return H, perm
 
 def commit_matrix(H:List[List[int]], e:int,N:int) -> Tuple[List[List[int]],List[List[int]],List[List[int]]]:
-    """Коммитменты RSA: F = s^e mod N, s = H+2*r"""
+    """Коммитменты RSA"""
     n=len(H)
     F,s_mat,r_mat=[[0]*n for _ in range(n)],[[0]*n for _ in range(n)],[[0]*n for _ in range(n)]
     for i in range(n):
@@ -176,7 +176,6 @@ def run_protocol_once(adj_G:List[List[int]],cycle_G:List[int],e:int,d:int,N:int)
         edges=[(cycle_in_H[i]-1,cycle_in_H[(i+1)%len(cycle_in_H)]-1) for i in range(len(cycle_in_H))]
         print("Bob запросил: показать цикл (1)")
         print("Гамильтонов цикл в H:", " ".join(str(x) for x in cycle_in_H))
-        # Показываем номера вершин + код ребра
         print("Рёбра цикла H:", ", ".join(f"({u+1},{v+1})" for u,v in edges))
         ok=True
         for u,v in edges:
