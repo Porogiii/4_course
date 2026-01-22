@@ -1,0 +1,73 @@
+CREATE TABLE books (
+    book_id int NOT NULL GENERATED ALWAYS AS IDENTITY,
+    title text NOT NULL,
+    
+    CONSTRAINT books_pkey PRIMARY KEY (book_id)
+);
+
+
+CREATE TABLE authors (
+    author_id int NOT NULL GENERATED ALWAYS AS IDENTITY,
+    last_name text NOT NULL,
+    first_name text NOT NULL,
+    middle_name text,
+    
+    CONSTRAINT authors_pkey PRIMARY KEY (author_id)
+);
+
+
+CREATE TABLE authorship (
+    book_id int NOT NULL,
+    author_id int NOT NULL,
+    seq_num int NOT NULL,
+    
+    CONSTRAINT authorship_pkey PRIMARY KEY (book_id, author_id),
+    CONSTRAINT authorship_author_id_fkey FOREIGN KEY (author_id) REFERENCES authors(author_id),
+    CONSTRAINT authorship_book_id_fkey FOREIGN KEY (book_id) REFERENCES books(book_id)
+);
+
+
+CREATE TABLE operations (
+    operation_id int NOT NULL GENERATED ALWAYS AS IDENTITY,
+    book_id int NOT NULL,
+    qty_change int NOT NULL,
+    date_created date NOT NULL DEFAULT CURRENT_DATE,
+    
+    CONSTRAINT operations_pkey PRIMARY KEY (operation_id),
+    CONSTRAINT operations_book_id_fkey FOREIGN KEY (book_id) REFERENCES books(book_id)
+);
+
+
+insert into books(title) value
+('Сказка о царе Салтане'),
+('Муму'),
+('Трудно быть богом'),
+('Война и мир'),
+('Путешествия в некоторые удаленные страны мира в четырех частях: сочинение Лемюэля Гулливера, сначала хирурга, а затем капитана нескольких кораблей'),
+('Хрестоматия');
+
+insert into authors(last_name, first_name, middle_name) values
+('Пушкин', 'Александр', 'Сергеевич'),
+('Тургенев', 'Иван', 'Сергеевич'),
+('Стругацкий', 'Борис', 'Натанович'),
+('Стругацкий', 'Аркадий', 'Натанович'),
+('Толстой', 'Лев', 'Николаевич'),
+('Свифт', 'Джонатан', 'NULL');
+
+
+insert into authroship(book_id, author_id, seq_num) values
+(1, 1, 1),
+(2, 2, 1),
+(3, 3, 2),
+(3, 4, 1),
+(4, 5, 1),
+(5, 6, 1),
+(6, 1, 1),
+(6, 5, 2),
+(6, 2, 3);
+
+
+insert into operations(book_id, qty_change, date_created) values
+(1, 10, '2025-06-24'),
+(1, 10, '2025-06-24'),
+(1, -1, '2025-06-24');
