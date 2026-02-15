@@ -102,7 +102,9 @@ class TPNumber(TANumber):
         return float(self.string.replace(DECIMAL_SEPARATOR, "."))
 
     def _from_float(self, x: float) -> str:
-        s = f"{x}".replace(".", DECIMAL_SEPARATOR)
+        if x == 0.0:
+            return "0"  # 🔥 НЕ "-0"!
+        s = f"{x:g}".replace(".", DECIMAL_SEPARATOR)
         return s
 
     # Реализация абстрактных методов
@@ -188,7 +190,9 @@ class TFrac(TANumber):
         self._update_string()
 
     def _update_string(self) -> None:
-        if self.denominator == 1:
+        if self.numerator == 0:
+            self.string = "0"  # 🔥 Нулевая дробь = "0"
+        elif self.denominator == 1:
             self.string = str(self.numerator)
         else:
             self.string = f"{self.numerator}/{self.denominator}"

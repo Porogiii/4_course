@@ -152,11 +152,18 @@ class FEditor(AEditor):
         return self._string
 
     def add_sign(self) -> str:
-        if self._string.startswith(self._sign):
-            self._string = self._string[len(self._sign):]
+        if self._string == "0" or self._string == "-0":
+            self._string = "-0"
+            return self._string
+
+        if self._string.startswith("-"):
+            if self._string == "-0":
+                self._string = "0"
+            else:
+                self._string = self._string[1:]  # Убираем минус
         else:
-            if not self.is_zero():
-                self._string = self._sign + self._string
+            self._string = "-" + self._string  # Добавляем минус
+
         return self._string
 
     def backspace(self) -> str:
@@ -167,7 +174,7 @@ class FEditor(AEditor):
         return self._string
 
     def clear(self) -> str:
-        self._string = self._zero
+        self._string = "0"
         return self._string
 
 
@@ -247,9 +254,10 @@ class CEditor(AEditor):
         return self._string
 
     def add_sign(self) -> str:
-        if self._edit_imag:
+        """Минус для комплексного."""
+        if self._edit_imag:  # Im часть
             self._im_editor.add_sign()
-        else:
+        else:  # Re часть
             self._re_editor.add_sign()
         self._sync_string()
         return self._string
