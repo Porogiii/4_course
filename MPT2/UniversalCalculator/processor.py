@@ -1,4 +1,3 @@
-# processor.py
 from __future__ import annotations
 from enum import Enum, auto
 from typing import Optional
@@ -20,74 +19,55 @@ class TFunc(Enum):
 
 
 class TProc:
-    """
-    Абстрактный тип данных «Процессор» (TProc). [file:1]
-    Выполняет двухоперандные операции и однооперандные функции над TANumber.
-    """
 
-    def __init__(self, left: TANumber, right: TANumber) -> None:
-        # Конструктор: копии операндов, Operation = None, Error = "". [file:1]
+    def __init__(self, left: TANumber, right: TANumber):
         self._lop_res: TANumber = left.copy()
         self._rop: TANumber = right.copy()
         self._operation: TOprtn = TOprtn.NONE
         self._error: str = ""
 
-    # Свойства для доступа к полям [file:1]
 
     @property
-    def lop_res(self) -> TANumber:
-        """Читать левый операнд. [file:1]"""
+    def lop_res(self):
         return self._lop_res.copy()
 
     @lop_res.setter
-    def lop_res(self, operand: TANumber) -> None:
-        """Записать левый операнд. [file:1]"""
+    def lop_res(self, operand: TANumber):
         self._lop_res = operand.copy()
 
     @property
-    def rop(self) -> TANumber:
-        """Читать правый операнд. [file:1]"""
+    def rop(self):
         return self._rop.copy()
 
     @rop.setter
-    def rop(self, operand: TANumber) -> None:
-        """Записать правый операнд. [file:1]"""
+    def rop(self, operand: TANumber):
         self._rop = operand.copy()
 
     @property
-    def operation(self) -> TOprtn:
-        """Читать состояние (операцию). [file:1]"""
+    def operation(self):
         return self._operation
 
     @operation.setter
-    def operation(self, op: TOprtn) -> None:
-        """Записать состояние (операцию). [file:1]"""
+    def operation(self, op: TOprtn):
         self._operation = op
 
     @property
-    def error(self) -> str:
-        """Читать ошибку. [file:1]"""
+    def error(self):
         return self._error
 
-    def clear_error(self) -> None:
-        """Сброс ошибки. [file:1]"""
+    def clear_error(self):
         self._error = ""
 
-    # Основные операции [file:1]
-
-    def reset(self) -> None:
-        """Сброс процессора: оба операнда = 0, операция None, ошибка пустая. [file:1]"""
+    def reset(self):
         self._lop_res = TPNumber(ZERO_STRING)
         self._rop = TPNumber(ZERO_STRING)
         self._operation = TOprtn.NONE
         self._error = ""
 
-    def oprtn_clear(self) -> None:
-        """Сброс операции. [file:1]"""
+    def oprtn_clear(self):
         self._operation = TOprtn.NONE
 
-    def oprtn_run(self) -> None:
-        """Выполнить текущую операцию над lop_res и rop. [file:1]"""
+    def oprtn_run(self):
         if self._operation == TOprtn.NONE:
             return
         try:
@@ -102,8 +82,7 @@ class TProc:
         except Exception as ex:
             self._error = str(ex)
 
-    def func_run(self, func: TFunc) -> None:
-        """Вычислить функцию над правым операндом. [file:1]"""
+    def func_run(self, func: TFunc):
         try:
             if func == TFunc.REV:
                 self._rop = self._rop.inv()

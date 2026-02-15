@@ -1,4 +1,3 @@
-# ui_qt.py – ФИНАЛЬНАЯ РАБОЧАЯ ВЕРСИЯ
 import sys
 from PyQt6.QtWidgets import *
 from PyQt6.QtCore import *
@@ -38,12 +37,11 @@ class UniversalCalculator(QMainWindow):
         self.mode_combo.currentTextChanged.connect(self.change_mode)
         toolbar.addWidget(self.mode_combo)
 
-        # Центральный layout
         central = QWidget()
         self.setCentralWidget(central)
         layout = QVBoxLayout(central)
 
-        # Дисплей (белый текст на тёмном фоне)
+        # Дисплей
         self.display = QLineEdit("0")
         self.display.setReadOnly(True)
         self.display.setAlignment(Qt.AlignmentFlag.AlignRight)
@@ -64,12 +62,12 @@ class UniversalCalculator(QMainWindow):
         self.mem_label.setStyleSheet("color: #95a5a6; font-size: 12px; padding: 10px; background: #ecf0f1;")
         layout.addWidget(self.mem_label)
 
-        # Кнопочная сетка 7x4
+        # Cетка 7x4
         grid = QGridLayout()
         grid.setSpacing(8)
         grid.setContentsMargins(25, 15, 25, 25)
 
-        # Кнопки (ряд, колонка, текст)
+        # Кнопки
         buttons = [
             [('MC', 0, 0), ('MR', 0, 1), ('MS', 0, 2), ('M+', 0, 3)],
             [('C', 1, 0), ('±', 1, 1), ('.', 1, 2), ('⌫', 1, 3)],
@@ -84,7 +82,7 @@ class UniversalCalculator(QMainWindow):
                 btn = self.create_button(text, row, col)
                 grid.addWidget(btn, row, col)
 
-        # 🔥 Кнопка "=" – вся ширина!
+        # Кнопка "="
         eq_layout = QHBoxLayout()
         eq_layout.addStretch(1)
         eq_btn = QPushButton("=")
@@ -105,8 +103,7 @@ class UniversalCalculator(QMainWindow):
 
         layout.addLayout(grid)
 
-    def create_button(self, text: str, row: int, col: int) -> QPushButton:
-        """Создание кнопки с цветами."""
+    def create_button(self, text: str, row: int, col: int):
         btn = QPushButton(text)
         btn.setMinimumSize(75, 55)
         btn.setFont(QFont("Segoe UI", 14, QFont.Weight.Bold))
@@ -136,7 +133,7 @@ class UniversalCalculator(QMainWindow):
         return btn
 
     def button_click(self, text):
-        """Универсальный обработчик."""
+        """Обработчик."""
         try:
             if text.isdigit():
                 self.ctrl.do_editor_command(int(text))
@@ -145,7 +142,7 @@ class UniversalCalculator(QMainWindow):
             elif text == 'C':
                 self.ctrl.do_calc_command('C')
             elif text == '±':
-                self.ctrl.do_editor_command(10)  # Смена знака
+                self.ctrl.do_editor_command(10)
             elif text in ('.', '⌫'):
                 cmds = {'.': 11, '⌫': 13}
                 self.ctrl.do_editor_command(cmds[text])
@@ -167,7 +164,6 @@ class UniversalCalculator(QMainWindow):
         self.update_display()
 
     def update_display(self):
-        """🔥 Безопасное обновление с фиксом -0."""
         text = self.ctrl.display or "0"
         if text == "-0":
             text = "0"
